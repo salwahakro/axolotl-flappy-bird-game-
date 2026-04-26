@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Axolotl Flappy Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(#aee1ff, #dff6ff);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+
+    h1 { margin-bottom: 10px; }
+
+    canvas {
+      background: #87ceeb;
+      border-radius: 20px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .instructions { margin-top: 10px; font-size: 14px; }
+
+    .difficulty {
+      margin-bottom: 10px;
+    }
+
+    .difficulty button {
+      margin: 5px;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🦎 Axolotl Flappy</h1>
+
+<div class="difficulty">
+  <strong>Select Difficulty:</strong><br>
+  <button onclick="setDifficulty('easy')">Easy</button>
+  <button onclick="setDifficulty('medium')">Medium</button>
+  <button onclick="setDifficulty('hard')">Hard</button>
+</div>
+
+<canvas id="gameCanvas" width="400" height="500"></canvas>
+<div class="instructions">Click or press SPACE to jump</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let axo = { x: 80, y: 200, size: 18, velocity: 0 };
+let gravity = 0.5;
+let pipeSpeed = 2;
+let pipeGap = 120;
+let spawnRate = 90;
+
+let pipes = [];
+let frame = 0;
+let score = 0;
+let gameOver = false;
+
+function setDifficulty(level) {
+  if (level === 'easy') {
+    gravity = 0.4;
+    pipeSpeed = 2;
+    pipeGap = 140;
+    spawnRate = 100;
+  } else if (level === 'medium') {
+    gravity = 0.5;
+    pipeSpeed = 2.5;
+    pipeGap = 120;
+    spawnRate = 90;
+  } else if (level === 'hard') {
+    gravity = 0.6;
+    pipeSpeed = 3;
+    pipeGap = 100;
+    spawnRate = 75;
+  }
+
+  resetGame();
+}
+
+function resetGame() {
+  axo.y = 200;
+  axo.velocity = 0;
+  pipes = [];
+  score = 0;
+  frame = 0;
+  gameOver = false;
+}
+
+function drawAxolotl() {
+  ctx.fillStyle = '#ff9ecb';
+  ctx.beginPath();
+  ctx.arc(axo.x, axo.y, axo.size, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = 'black';
+  ctx.fillRect(axo.x - 5, axo.y - 4, 3, 3);
+  ctx.fillRect(axo.x + 2, axo.y - 4, 3, 3);
+
+  ctx.fillStyle = '#ff6fa5';
+  ctx.fillRect(axo.x - 20, axo.y - 5, 6, 2);
+  ctx.fillRect(axo.x + 14, axo.y - 5, 6, 2);
+}
+
+function drawPipes() {
+  ctx.fillStyle = '#4caf50';
+  pipes.forEach(p => {
+    ctx.fillRect(p.x, 0, 40, p.top);
+    ctx.fillRect(p.x, p.bottom, 40, canvas.height);
+  });
+}
+
+function detectCollision(p) {
+  return (
+    axo.x + axo.size > p.x &&
+    axo.x - axo.size < p.x + 40 &&
+    (axo.y - axo.size < p.top || axo.y + axo.size > p.bottom)
+  );
+}
+
+function update() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (!gameOver) {
+    axo.velocity += gravity;
+    axo.y += axo.velocity;
+
+    if (frame % spawnRate === 0) {
+      let top = Math.random() * 200 + 50;
+      pipes.push({ x: canvas.width, top: top, bottom: top + pipeGap, passed: false });
+    }
+
+    pipes.forEach(p => {
+      p.x -= pipeSpeed;
+
+      if (!p.passed && p.x + 40 < axo.x) {
+        score++;
+        p.passed = true;
+      }
+
+      if (detectCollision(p)) {
+        gameOver = true;
+      }
+    });
+
+    if (axo.y > canvas.height || axo.y < 0) {
+      gameOver = true;
+    }
+
+    frame++;
+  }
+
+  drawAxolotl();
+  drawPipes();
+
+  ctx.fillStyle = 'black';
+  ctx.font = '20px Arial';
+  ctx.fillText('Score: ' + score, 10, 30);
+
+  if (gameOver) {
+    ctx.fillText('Game Over! Click to restart', 70, 250);
+  }
+
+  requestAnimationFrame(update);
+}
+
+function jump() {
+  if (gameOver) {
+    resetGame();
+  } else {
+    axo.velocity = -8;
+  }
+}
+
+document.addEventListener('click', jump);
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') jump();
+});
+
+update();
+</script>
+
+</body>
+</html>
